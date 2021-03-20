@@ -2,6 +2,7 @@ import math
 import random
 from matplotlib import pyplot as plt
 from copy import copy
+import statistics
 
 
 # Klasa przechowująca współrzędne wierzchołka
@@ -303,7 +304,8 @@ def measurements(num_of_measurements=100):
             min_length = min(lengths)
             max_length = max(lengths)
             avg_length = sum(lengths) / num_of_measurements
-            results[instance + ' ' + type(alg).__name__] = [min_length, max_length, avg_length]
+            std = statistics.pstdev(lengths)
+            results[instance + ' ' + type(alg).__name__] = [min_length, max_length, avg_length, std]
 
     for key in best_algorithms:
         alg = best_algorithms[key]
