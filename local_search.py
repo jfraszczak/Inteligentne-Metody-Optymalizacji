@@ -2,6 +2,7 @@ from greedy_algorithms import NearestNeighbour, GreedyCycle, RegretHeuristics
 import math
 from matplotlib import pyplot as plt
 import random
+from copy import deepcopy
 
 
 # Klasa instancji, przechowuje macierz odległości, listę wierzchołków, liczbę wierzchołków (teraz całość jest osobno zamaist tak jak poprrzednio jako część klasy algorytm żeby troche bardziej zmodularyzować)
@@ -179,7 +180,7 @@ class Solution:
 
 # Pierwszy z 2 algorytmów, jeszcze nie wiem które ruchy mamy wykonywać w jakiej kombinacji więc wrzuciłem wszystkie 5.
 # Też nie wiedziałem jak te metody ładnie wrzucić do tablicy i po nich iterować więc użyłem introspekcji ale chyba jest nadal dosyć czytelne
-def steepest_search(solution):
+def steepest_search(solution: Solution):
     moves = ['swap_vertices_path1',
              'swap_vertices_path2',
              'swap_edges_path1',
@@ -213,15 +214,49 @@ def steepest_search(solution):
 
     return solution
 
+
+def greedy_search(solution: Solution):
+    moves = ['swap_vertices_path1',
+             'swap_vertices_path2',
+             'swap_edges_path1',
+             'swap_edges_path2',
+             'exchange_vertices']
+
+    found_better = True
+
+    while found_better:
+        best_length = solution.cumulative_length()
+        random.shuffle(moves)
+        found_better = False
+
+        for move in moves:
+            arg1_list = list(range(solution.path1_size()))
+            random.shuffle(arg1_list)
+            for arg1 in arg1_list:
+                    arg2_list = deepcopy(arg1_list)
+                    arg2_list.remove(arg1)
+                    random.shuffle(arg2_list)
+                    for arg2 in arg2_list:
+                        length = solution.cumulative_length_after_move(getattr(solution, move), arg1, arg2)
+                        if length < best_length:
+                            found_better = True
+                            best_length = length
+                            getattr(solution, move)(arg1, arg2)
+
+    return solution
+
+
 # Inicjalizacja rozwiązania
-s = Solution('kroA100.tsp')
+instances = [Solution('kroA100.tsp'), Solution('kroB100.tsp')]
 #s.random_initialization()
-s.greedy_algorithm_initialization(GreedyCycle)
-print(s.cumulative_length())
-s.visualise()
+for s in instances:
+    s.greedy_algorithm_initialization(GreedyCycle)
+    print(s.cumulative_length())
+    s.visualise()
 
-# Zastosowanie tego steepest searcha
-sol = steepest_search(s)
-print(sol.cumulative_length())
-sol.visualise()
-
+    algorithms = [steepest_search, greedy_search]
+    for fun in algorithms:
+        sol = fun(deepcopy(s))
+        print(sol.cumulative_length())
+        sol.visualise()
+        
