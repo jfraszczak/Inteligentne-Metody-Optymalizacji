@@ -3,7 +3,8 @@ import math
 from matplotlib import pyplot as plt
 import random
 from copy import deepcopy
-
+from time import perf_counter
+import numpy as np
 
 # Klasa instancji, przechowuje macierz odległości, listę wierzchołków, liczbę wierzchołków (teraz całość jest osobno zamaist tak jak poprrzednio jako część klasy algorytm żeby troche bardziej zmodularyzować)
 class Instance:
@@ -180,12 +181,12 @@ class Solution:
 
 # Pierwszy z 2 algorytmów, jeszcze nie wiem które ruchy mamy wykonywać w jakiej kombinacji więc wrzuciłem wszystkie 5.
 # Też nie wiedziałem jak te metody ładnie wrzucić do tablicy i po nich iterować więc użyłem introspekcji ale chyba jest nadal dosyć czytelne
-def steepest_search(solution: Solution):
-    moves = ['swap_vertices_path1',
-             'swap_vertices_path2',
-             'swap_edges_path1',
-             'swap_edges_path2',
-             'exchange_vertices']
+def steepest_search(solution: Solution, moves):
+    # moves = ['swap_vertices_path1',
+    #          'swap_vertices_path2',
+    #          'swap_edges_path1',
+    #          'swap_edges_path2',
+    #          'exchange_vertices']
 
     found_better = True
     while found_better:
@@ -215,12 +216,12 @@ def steepest_search(solution: Solution):
     return solution
 
 
-def greedy_search(solution: Solution):
-    moves = ['swap_vertices_path1',
-             'swap_vertices_path2',
-             'swap_edges_path1',
-             'swap_edges_path2',
-             'exchange_vertices']
+def greedy_search(solution: Solution, moves):
+    # moves = ['swap_vertices_path1',
+    #          'swap_vertices_path2',
+    #          'swap_edges_path1',
+    #          'swap_edges_path2',
+    #          'exchange_vertices']
 
     found_better = True
 
@@ -246,17 +247,67 @@ def greedy_search(solution: Solution):
     return solution
 
 
-# Inicjalizacja rozwiązania
-instances = [Solution('kroA100.tsp'), Solution('kroB100.tsp')]
-#s.random_initialization()
-for s in instances:
-    s.greedy_algorithm_initialization(GreedyCycle)
-    print(s.cumulative_length())
-    s.visualise()
+def random_walk(solution: Solution, max_time: float):
+    moves = ['swap_vertices_path1',
+             'swap_vertices_path2',
+             'swap_edges_path1',
+             'swap_edges_path2',
+             'exchange_vertices']
 
-    algorithms = [steepest_search, greedy_search]
-    for fun in algorithms:
-        sol = fun(deepcopy(s))
-        print(sol.cumulative_length())
-        sol.visualise()
-        
+    time_start = perf_counter()
+
+    while (perf_counter()-time_start < max_time):
+        random.shuffle(moves)
+        for move in moves:
+            arg1_list = list(range(solution.path1_size()))
+            random.shuffle(arg1_list)
+            for arg1 in arg1_list:
+                    arg2_list = deepcopy(arg1_list)
+                    arg2_list.remove(arg1)
+                    random.shuffle(arg2_list)
+                    for arg2 in arg2_list:
+                        getattr(solution, move)(arg1, arg2)
+
+    return solution
+
+
+instances = [Solution('kroA100.tsp'), Solution('kroB100.tsp')]
+
+max_time = 0
+
+results = []
+
+for _ in range(0, 10):
+    line = []
+    for s in instances:
+        s.greedy_algorithm_initialization(GreedyCycle)
+        line.append(s.cumulative_length())
+
+        algorithms = [steepest_search, greedy_search]
+        for fun in algorithms:
+            movesets = [
+                ['swap_vertices_path1',
+                'swap_vertices_path2',
+                'swap_edges_path1',
+                'swap_edges_path2'],
+                ['exchange_vertices']
+            ]
+            for moves in movesets:
+                time_start = perf_counter()
+                sol = fun(deepcopy(s), moves)
+                time = perf_counter() - time_start
+                if time > max_time:
+                    max_time = time
+
+                line.append(sol.cumulative_length())
+
+        sol = random_walk(deepcopy(s), max_time)
+        line.append(sol.cumulative_length())
+
+    results.append(line)
+
+results = np.array(results)
+print(np.amin(results, 0))
+print(np.amax(results, 0))
+print(np.mean(results, 0))
+print(np.std(results, 0))
