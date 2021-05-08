@@ -5,6 +5,8 @@ import numpy as np
 import csv
 from solution import Solution
 
+from numba import jit
+
 
 # Pierwszy z 2 algorytmów, jeszcze nie wiem które ruchy mamy wykonywać w jakiej kombinacji więc wrzuciłem wszystkie 5.
 # Też nie wiedziałem jak te metody ładnie wrzucić do tablicy i po nich iterować więc użyłem introspekcji ale chyba jest nadal dosyć czytelne
@@ -31,6 +33,7 @@ def steepest_search(solution: Solution, moves):
                         best_move = move
                         best_arg1 = arg1
                         best_arg2 = arg2
+                        #print(length)
         if found_better:
             getattr(solution, best_move)(best_arg1, best_arg2)
 

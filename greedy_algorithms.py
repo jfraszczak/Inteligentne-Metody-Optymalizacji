@@ -238,6 +238,19 @@ class GreedyCycle(NearestNeighbour):
 
         return best_vertex
 
+    def find_best_vertex_randomized(self, vertex, used_vertices, path):
+        if random.random() < 0.9:
+            best_vertex = self.find_best_vertex(vertex, used_vertices, path)
+        else:
+            vertices_left = []
+            for v in range(self.size):
+                if v not in used_vertices:
+                    vertices_left.append(v)
+            best_vertex = random.choice(vertices_left)
+            path.insert(0, best_vertex)
+
+        return best_vertex
+
     def find_solution(self, vertex1=None, vertex2=None):
         self.initialize_starting_vertices(vertex1, vertex2)
 
@@ -252,6 +265,30 @@ class GreedyCycle(NearestNeighbour):
             used_vertices.append(closest_vertex1)
 
             closest_vertex2 = self.find_best_vertex(previously_added2, used_vertices, self.path2)
+            used_vertices.append(closest_vertex2)
+
+            previously_added1 = closest_vertex1
+            previously_added2 = closest_vertex2
+
+        if self.size % 2 == 1:
+            closest_vertex1 = self.find_closest_vertex(previously_added1, used_vertices)
+            used_vertices.append(closest_vertex1)
+            self.make_best_insertion(1, closest_vertex1)
+
+    def find_solution_randomized(self, vertex1=None, vertex2=None):
+        self.initialize_starting_vertices(vertex1, vertex2)
+
+        num_of_iterations = int(self.size / 2) - 1
+        previously_added1 = self.path1[0]
+        previously_added2 = self.path2[0]
+
+        used_vertices = [previously_added1, previously_added2]
+
+        for i in range(num_of_iterations):
+            closest_vertex1 = self.find_best_vertex_randomized(previously_added1, used_vertices, self.path1)
+            used_vertices.append(closest_vertex1)
+
+            closest_vertex2 = self.find_best_vertex_randomized(previously_added2, used_vertices, self.path2)
             used_vertices.append(closest_vertex2)
 
             previously_added1 = closest_vertex1

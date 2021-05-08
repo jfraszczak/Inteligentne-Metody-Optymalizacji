@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 import random
 
 
+
 # Klasa instancji, przechowuje macierz odległości, listę wierzchołków, liczbę wierzchołków (teraz całość jest osobno zamaist tak jak poprrzednio jako część klasy algorytm żeby troche bardziej zmodularyzować)
 class Instance:
     def __init__(self):
@@ -77,35 +78,77 @@ class Solution:
         self.path1 = alg.path1[:]
         self.path2 = alg.path2[:]
 
-    def exchange_vertices(self, vertex1, vertex2, index=True):
-        if index:
-            vertex1_index = vertex1
-            vertex2_index = vertex2
-        else:
-            vertex1_index = self.vertex_to_index(vertex1, 'path1')
-            vertex2_index = self.vertex_to_index(vertex2, 'path2')
+    def randomized_heuristic_initialization(self):
+        alg = GreedyCycle()
+        alg.read_instance_object(self.instance)
+        alg.find_solution_randomized()
+        self.path1 = alg.path1[:]
+        self.path2 = alg.path2[:]
 
-        self.path1[vertex1_index], self.path2[vertex2_index] = self.path2[vertex2_index], self.path1[vertex1_index]
+    def perturbation1(self):
+        num_of_vertices_exchanges = 3
+        num_of_vertices_swaps = 3
+
+        for i in range(num_of_vertices_exchanges):
+            vertex1 = random.randint(0, self.path1_size() - 1)
+            vertex2 = random.randint(0, self.path2_size() - 1)
+            self.exchange_vertices(vertex1, vertex2)
+
+        for i in range(num_of_vertices_swaps):
+            vertex1 = random.randint(0, self.path1_size() - 1)
+            vertex2 = random.randint(0, self.path1_size() - 1)
+            self.swap_edges_path1(vertex1, vertex2)
+
+        for i in range(num_of_vertices_swaps):
+            vertex1 = random.randint(0, self.path2_size() - 1)
+            vertex2 = random.randint(0, self.path2_size() - 1)
+            self.swap_edges_path2(vertex1, vertex2)
+
+    def destroy(self, percentage):
+        removed_vertices = []
+        for i in range(int(percentage * self.path1_size())):
+            vertex_to_remove = random.choice(self.path1)
+            self.path1.remove(vertex_to_remove)
+            removed_vertices.append(vertex_to_remove)
+
+        for i in range(int(percentage * self.path2_size())):
+            vertex_to_remove = random.choice(self.path2)
+            self.path2.remove(vertex_to_remove)
+            removed_vertices.append(vertex_to_remove)
+
+        return removed_vertices
+
+    def perturbation2(self):
+        percentage = 0.3
+        used_vertices = []
+        removed_vertices = self.destroy(percentage)
+        for i in range(self.instance.size):
+            if i not in removed_vertices:
+                used_vertices.append(i)
+
+        greedy = GreedyCycleRepair(self)
+        self = greedy.repair(used_vertices, int(self.instance.size * percentage / 2))
+
+    def exchange_vertices(self, vertex1, vertex2, index=True):
+        if not index:
+            vertex1 = self.vertex_to_index(vertex1, 'path1')
+            vertex2 = self.vertex_to_index(vertex2, 'path2')
+
+        self.path1[vertex1], self.path2[vertex2] = self.path2[vertex2], self.path1[vertex1]
 
     def swap_vertices_path1(self, vertex1, vertex2, index=True):
-        if index:
-            vertex1_index = vertex1
-            vertex2_index = vertex2
-        else:
-            vertex1_index = self.vertex_to_index(vertex1, 'path1')
-            vertex2_index = self.vertex_to_index(vertex2, 'path1')
+        if not index:
+            vertex1 = self.vertex_to_index(vertex1, 'path1')
+            vertex2 = self.vertex_to_index(vertex2, 'path1')
 
-        self.path1[vertex1_index], self.path1[vertex2_index] = self.path1[vertex2_index], self.path1[vertex1_index]
+        self.path1[vertex1], self.path1[vertex2] = self.path1[vertex2], self.path1[vertex1]
 
     def swap_vertices_path2(self, vertex1, vertex2, index=True):
-        if index:
-            vertex1_index = vertex1
-            vertex2_index = vertex2
-        else:
-            vertex1_index = self.vertex_to_index(vertex1, 'path2')
-            vertex2_index = self.vertex_to_index(vertex2, 'path2')
+        if not index:
+            vertex1 = self.vertex_to_index(vertex1, 'path1')
+            vertex2 = self.vertex_to_index(vertex2, 'path1')
 
-        self.path2[vertex1_index], self.path2[vertex2_index] = self.path2[vertex2_index], self.path2[vertex1_index]
+        self.path2[vertex1], self.path2[vertex2] = self.path2[vertex2], self.path2[vertex1]
 
     def swap_edges_path1(self, edge1, edge2, index=True):
         new_path = []
@@ -115,14 +158,9 @@ class Solution:
 
         edge1, edge2 = min(edge1, edge2), max(edge1, edge2)
 
-        for i in range(edge1 + 1):
-            new_path.append(self.path1[i])
-
-        for i in range(edge2, edge1, -1):
-            new_path.append(self.path1[i])
-
-        for i in range(edge2 + 1, len(self.path1)):
-            new_path.append(self.path1[i])
+        new_path = new_path + self.path1[:edge1 + 1]
+        new_path.extend(reversed(self.path1[edge1 + 1: edge2 + 1]))
+        new_path = new_path + self.path1[edge2 + 1: len(self.path1)]
 
         self.path1 = new_path[:]
 
@@ -134,14 +172,9 @@ class Solution:
 
         edge1, edge2 = min(edge1, edge2), max(edge1, edge2)
 
-        for i in range(edge1 + 1):
-            new_path.append(self.path2[i])
-
-        for i in range(edge2, edge1, -1):
-            new_path.append(self.path2[i])
-
-        for i in range(edge2 + 1, len(self.path2)):
-            new_path.append(self.path2[i])
+        new_path = new_path + self.path2[:edge1 + 1]
+        new_path.extend(reversed(self.path2[edge1 + 1: edge2 + 1]))
+        new_path = new_path + self.path2[edge2 + 1: len(self.path2)]
 
         self.path2 = new_path[:]
 
@@ -267,3 +300,104 @@ class Solution:
         else:
             plt.savefig('visualisations/' + title + '.png')
             plt.clf()
+
+
+class GreedyCycleRepair():
+
+    def __init__(self, solution):
+        self.solution = solution
+
+    def calculate_path_length(self, path):
+        length = 0
+        for i in range(len(path) - 1):
+            length += self.solution.instance.distance_matrix[path[i]][path[i + 1]]
+        length += self.solution.instance.distance_matrix[path[0]][path[-1]]
+
+        return length
+
+    def make_best_insertion(self, path_id, vertex):
+        if path_id == 1:
+            path = self.solution.path1[:]
+        elif path_id == 2:
+            path = self.solution.path2[:]
+
+        for i in range(1, len(path) + 1):
+            new_path = path[:]
+            new_path.insert(i, vertex)
+            length = self.calculate_path_length(new_path)
+
+            if i == 1:
+                shortest_length = length
+                best_insertion = i
+            else:
+                if length < shortest_length:
+                    shortest_length = length
+                    best_insertion = i
+
+        if path_id == 1:
+            self.solution.path1.insert(best_insertion, vertex)
+        elif path_id == 2:
+            self.solution.path2.insert(best_insertion, vertex)
+
+    def get_k_insertions(self, path, vertex, k):
+        lengths = []
+
+        for i in range(1, len(path) + 1):
+            new_path = path[:]
+            new_path.insert(i, vertex)
+            length = self.calculate_path_length(new_path)
+            lengths.append(length)
+
+            if i == 1:
+                shortest_length = length
+                best_insertion = i
+            else:
+                if length < shortest_length:
+                    shortest_length = length
+                    best_insertion = i
+
+        return sorted(lengths)[:k], best_insertion
+
+    def find_best_vertex(self, vertex, used_vertices, path):
+        best_vertex = None
+        first = True
+        for i in range(self.solution.instance.size):
+            if i not in used_vertices and i != vertex:
+                if first:
+                    cost, insertion = self.get_k_insertions(path, i, 1)
+                    min_cost = cost[0]
+                    best_insertion = insertion
+                    best_vertex = i
+                    first = False
+                else:
+                    cost, insertion = self.get_k_insertions(path, i, 1)
+                    if cost[0] < min_cost:
+                        min_cost = cost[0]
+                        best_vertex = i
+                        best_insertion = insertion
+
+        path.insert(best_insertion, best_vertex)
+
+        return best_vertex
+
+    def repair(self, used_vertices, num_of_iterations):
+
+        previously_added1 = self.solution.path1[0]
+        previously_added2 = self.solution.path2[0]
+
+        for i in range(num_of_iterations):
+            closest_vertex1 = self.find_best_vertex(previously_added1, used_vertices, self.solution.path1)
+            used_vertices.append(closest_vertex1)
+
+            closest_vertex2 = self.find_best_vertex(previously_added2, used_vertices, self.solution.path2)
+            used_vertices.append(closest_vertex2)
+
+            previously_added1 = closest_vertex1
+            previously_added2 = closest_vertex2
+
+        if self.solution.instance.size % 2 == 1:
+            closest_vertex1 = self.find_closest_vertex(previously_added1, used_vertices)
+            used_vertices.append(closest_vertex1)
+            self.make_best_insertion(1, closest_vertex1)
+
+        return self.solution
