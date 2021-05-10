@@ -86,23 +86,54 @@ class Solution:
         self.path2 = alg.path2[:]
 
     def perturbation1(self):
-        num_of_vertices_exchanges = 3
+        num_of_vertices_exchanges = 5
         num_of_vertices_swaps = 3
 
+        central_vertices = []
+        for vertex in self.instance.vertices:
+            if 1000 < vertex.x < 3000:
+                central_vertices.append(vertex.identifier - 1)
+
+        #print(central_vertices)
+
+        central_vertices1 = []
+        for i in range(self.path1_size()):
+            if self.path1[i] in central_vertices:
+                central_vertices1.append(i)
+
+        central_vertices2 = []
+        for i in range(self.path2_size()):
+            if self.path2[i] in central_vertices:
+                central_vertices2.append(i)
+
+        # print(central_vertices1)
+        # print(central_vertices2)
+
         for i in range(num_of_vertices_exchanges):
-            vertex1 = random.randint(0, self.path1_size() - 1)
-            vertex2 = random.randint(0, self.path2_size() - 1)
-            self.exchange_vertices(vertex1, vertex2)
+            if len(central_vertices1) > 0 and len(central_vertices2) > 0:
+                vertex1 = random.randint(0, len(central_vertices1) - 1)
+                vertex2 = random.randint(0, len(central_vertices2) - 1)
+                self.exchange_vertices(vertex1, vertex2)
+        #
+        # for i in range(num_of_vertices_swaps):
+        #     vertex1 = random.randint(0, self.path1_size() - 1)
+        #     vertex2 = random.randint(0, self.path1_size() - 1)
+        #     self.swap_vertices_path1(vertex1, vertex2)
+        #
+        # for i in range(num_of_vertices_swaps):
+        #     vertex1 = random.randint(0, self.path2_size() - 1)
+        #     vertex2 = random.randint(0, self.path2_size() - 1)
+        #     self.swap_vertices_path2(vertex1, vertex2)
 
-        for i in range(num_of_vertices_swaps):
-            vertex1 = random.randint(0, self.path1_size() - 1)
-            vertex2 = random.randint(0, self.path1_size() - 1)
-            self.swap_edges_path1(vertex1, vertex2)
+        for i in range(3):
+            edge1 = random.randint(0, self.path1_size())
+            edge2 = random.randint(0, self.path1_size())
+            self.swap_edges_path1(edge1, edge2)
 
-        for i in range(num_of_vertices_swaps):
-            vertex1 = random.randint(0, self.path2_size() - 1)
-            vertex2 = random.randint(0, self.path2_size() - 1)
-            self.swap_edges_path2(vertex1, vertex2)
+        for i in range(3):
+            edge1 = random.randint(0, self.path2_size())
+            edge2 = random.randint(0, self.path2_size())
+            self.swap_edges_path2(edge1, edge2)
 
     def destroy(self, percentage):
         removed_vertices = []
