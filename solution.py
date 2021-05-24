@@ -61,8 +61,14 @@ class Solution:
         self.path1 = []
         self.path2 = []
 
+        self.total_length = None
+
     def vertices_distance(self, vertex1, vertex2):
         return self.instance.distance_matrix[vertex1][vertex2]
+
+    def set_paths(self, path1, path2):
+        self.path1 = path1
+        self.path2 = path2
 
     def random_initialization(self):
         vertices = list(range(self.instance.size))
@@ -125,12 +131,12 @@ class Solution:
         #     vertex2 = random.randint(0, self.path2_size() - 1)
         #     self.swap_vertices_path2(vertex1, vertex2)
 
-        for i in range(3):
+        for i in range(num_of_vertices_swaps):
             edge1 = random.randint(0, self.path1_size())
             edge2 = random.randint(0, self.path1_size())
             self.swap_edges_path1(edge1, edge2)
 
-        for i in range(3):
+        for i in range(num_of_vertices_swaps):
             edge1 = random.randint(0, self.path2_size())
             edge2 = random.randint(0, self.path2_size())
             self.swap_edges_path2(edge1, edge2)
@@ -159,6 +165,10 @@ class Solution:
 
         greedy = GreedyCycleRepair(self)
         self = greedy.repair(used_vertices, int(self.instance.size * percentage / 2))
+
+    def genetic_algorithm_repair(self, used_vertices):
+        greedy = GreedyCycleRepair(self)
+        self = greedy.repair2(used_vertices, int(self.instance.size / 2))
 
     def exchange_vertices(self, vertex1, vertex2, index=True):
         if not index:
@@ -230,11 +240,14 @@ class Solution:
     def cumulative_length(self):
         return self.calculate_path_length(self.path1) + self.calculate_path_length(self.path2)
 
+    def set_total_length(self):
+        self.total_length = self.cumulative_length()
+
     def path1_size(self):
-        return len(self.path1)
+        return len(set(self.path1))
 
     def path2_size(self):
-        return len(self.path2)
+        return len(set(self.path2))
 
     def previous_and_next_vertex(self, vertex, path):
         path_size = getattr(self, path + '_size')()
@@ -426,9 +439,35 @@ class GreedyCycleRepair():
             previously_added1 = closest_vertex1
             previously_added2 = closest_vertex2
 
-        if self.solution.instance.size % 2 == 1:
-            closest_vertex1 = self.find_closest_vertex(previously_added1, used_vertices)
+        return self.solution
+
+    def repair2(self, used_vertices, final_path_size):
+        previously_added1 = self.solution.path1[0]
+        previously_added2 = self.solution.path2[0]
+
+        path1_size = len(self.solution.path1)
+        path2_size = len(self.solution.path2)
+
+        num_of_iterations = final_path_size - max(path1_size, path2_size)
+
+        for i in range(num_of_iterations):
+            closest_vertex1 = self.find_best_vertex(previously_added1, used_vertices, self.solution.path1)
             used_vertices.append(closest_vertex1)
-            self.make_best_insertion(1, closest_vertex1)
+
+            closest_vertex2 = self.find_best_vertex(previously_added2, used_vertices, self.solution.path2)
+            used_vertices.append(closest_vertex2)
+
+            previously_added1 = closest_vertex1
+            previously_added2 = closest_vertex2
+
+        while len(self.solution.path1) < final_path_size:
+            closest_vertex1 = self.find_best_vertex(previously_added1, used_vertices, self.solution.path1)
+            used_vertices.append(closest_vertex1)
+            previously_added1 = closest_vertex1
+
+        while len(self.solution.path2) < final_path_size:
+            closest_vertex2 = self.find_best_vertex(previously_added2, used_vertices, self.solution.path2)
+            used_vertices.append(closest_vertex2)
+            previously_added2 = closest_vertex2
 
         return self.solution
