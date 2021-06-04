@@ -5,6 +5,7 @@ from copy import deepcopy
 import local_search
 import math
 
+from proposed_method import create_population
 
 class HybridGeneticAlgorithm:
     def __init__(self, instance_name, population_size, time_limit):
@@ -28,6 +29,11 @@ class HybridGeneticAlgorithm:
             self.population.append(solution)
             print(i)
         self.population = sorted(self.population, key=lambda sol: sol.total_length)
+
+    def initialize_population_improved(self):
+        population = create_population(self.instance_name, 500)
+        self.population = sorted(population, key=lambda sol: sol.total_length)
+        self.population = self.population[:self.population_size]
 
     def create_list_of_edges(self, solution):
         edges1 = []
@@ -81,7 +87,7 @@ class HybridGeneticAlgorithm:
 
         if random.random() < max(math.log(self.iteration / 30 + 1), 0.5):
             perturbated_parent2 = deepcopy(parent2)
-            perturbated_parent2.perturbation1()
+            perturbated_parent2.perturbation2()
             parent2 = deepcopy(perturbated_parent2)
 
         edges_to_delete = []
@@ -103,7 +109,7 @@ class HybridGeneticAlgorithm:
             new_paths.append(vertices)
             used_vertices.extend(vertices)
 
-        child = Solution(self.instance_name)
+        child = Solution(self.instance_name + '.tsp')
         child.set_paths(new_paths[0], new_paths[1])
 
         return child, used_vertices
@@ -130,19 +136,31 @@ class HybridGeneticAlgorithm:
         return True
 
     def run(self, perform_local_search=True):
-        self.initialize_population()
+        self.initialize_population_improved()
 
         start_time = time()
         self.iteration = 0
         while time() - start_time < self.time_limit:
             parent1, parent2 = tuple(random.sample(self.population, 2))
             child = self.crossover(parent1, parent2, perform_local_search=perform_local_search)
-            print(child.total_length, self.population[-1].total_length)
+            print('New child', child.total_length)
             #child.visualise()
 
             if child.total_length < self.population[-1].total_length and self.different(child):
                 self.population[-1] = child
                 self.population = sorted(self.population, key=lambda sol: sol.total_length)
+
+
+                moves = ['swap_edges_path1',
+                         'swap_edges_path2',
+                         'exchange_vertices'
+                         ]
+
+                self.population[0] = local_search.steepest_search(self.population[0], moves)
+                self.population[0].set_total_length()
+
+                print('BEST', self.population[0].cumulative_length())
+                #self.population[0].visualise()
 
             self.iteration += 1
 
@@ -161,7 +179,7 @@ class HybridGeneticAlgorithm:
             print('({}, {})'.format(self.vertex1 + 1, self.vertex2 + 1))
 
 
-def measurements(instance_name, time, num_of_measurements=10, perform_local_search=True):
+def measurements(instance_name, time, num_of_measurements=5, perform_local_search=True):
     if perform_local_search:
         title = instance_name + '-ILS2'
     else:
@@ -171,7 +189,7 @@ def measurements(instance_name, time, num_of_measurements=10, perform_local_sear
     scores = []
 
     for i in range(num_of_measurements):
-        alg = HybridGeneticAlgorithm(instance_name, 20, time)
+        alg = HybridGeneticAlgorithm(instance_name, 100, time)
         solution = alg.run(perform_local_search=perform_local_search)
 
         scores.append(solution.total_length)
@@ -192,11 +210,9 @@ def measurements(instance_name, time, num_of_measurements=10, perform_local_sear
     best_solution.visualise(title=title + '.png', save=True)
 
 
-#measurements('kroA200.tsp', 1200, perform_local_search=True)
-# measurements('kroA200.tsp', 300, perform_local_search=False)
-# measurements('kroB200.tsp', 300, perform_local_search=False)
+measurements('kroA200', 600, perform_local_search=True)
+measurements('kroB200', 600, perform_local_search=True)
 
-measurements('kroB200.tsp', 900, perform_local_search=True)
 
 
 

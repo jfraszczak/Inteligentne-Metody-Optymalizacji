@@ -164,7 +164,7 @@ class Solution:
                 used_vertices.append(i)
 
         greedy = GreedyCycleRepair(self)
-        self = greedy.repair(used_vertices, int(self.instance.size * percentage / 2))
+        self = greedy.repair2(used_vertices, int(self.instance.size * percentage / 2))
 
     def genetic_algorithm_repair(self, used_vertices):
         greedy = GreedyCycleRepair(self)
